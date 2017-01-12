@@ -29,7 +29,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"method", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"method", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMethodDefinitionWithArguments {
@@ -42,7 +42,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"method", @"NSString", @"*", @"var", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"method", @"NSString", @"*", @"var", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMethodDefinitionWithMutlipleArguments {
@@ -55,7 +55,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"arg1", @"int", @"var1", @"arg2", @"long", @"var2", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"arg1", @"int", @"var1", @"arg2", @"long", @"var2", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMethodDefinitionBlockArgument {
@@ -68,7 +68,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"method", @"void", @"(", @"^", @")", @"(", @"id", @"obj", @",", @"NSUInteger", @"idx", @")", @"block", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"method", @"void", @"(", @"^", @")", @"(", @"id", @"obj", @",", @"NSUInteger", @"idx", @")", @"block", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMethodDefinitionVariableArgsArgument {
@@ -96,8 +96,8 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(2));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"method1", nil];
-	[self assertMethod:[methods objectAtIndex:1] matchesClassComponents:@"void", @"method2", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"method1", nil];
+	[self assertMethod:methods[1] matchesClassComponents:@"void", @"method2", nil];
 }
 
 - (void)testParseObjectsFromString_shouldHandleAttributeDirectiveForMethods {
@@ -110,7 +110,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"void", @"method", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"void", @"method", nil];
 }
 
 - (void)testParseObjectsFromString_shouldHandlePragmaMarkBeforeMethod {
@@ -123,8 +123,8 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"void", @"method", nil];
-	assertThat([(GBComment *)[[methods objectAtIndex:0] comment] stringValue], is(@"comment"));
+	[self assertMethod:methods[0] matchesInstanceComponents:@"void", @"method", nil];
+	assertThat([(GBComment *)[methods[0] comment] stringValue], is(@"comment"));
 }
 
 - (void)testParseObjectsFromString_shouldHandlePragmaMarkBeforeProperty {
@@ -137,8 +137,8 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesPropertyComponents:@"readonly", @"int", @"value", nil];
-	assertThat([(GBComment *)[[methods objectAtIndex:0] comment] stringValue], is(@"comment"));
+	[self assertMethod:methods[0] matchesPropertyComponents:@"readonly", @"int", @"value", nil];
+	assertThat([(GBComment *)[methods[0] comment] stringValue], is(@"comment"));
 }
 
 #pragma mark Method declarations parsing
@@ -153,7 +153,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"method", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"method", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMethodDeclarationWithArguments {
@@ -166,7 +166,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"method", @"NSString", @"*", @"var", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"method", @"NSString", @"*", @"var", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMethodDeclarationWithMutlipleArguments {
@@ -179,7 +179,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"arg1", @"int", @"var1", @"arg2", @"long", @"var2", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"arg1", @"int", @"var1", @"arg2", @"long", @"var2", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMethodDeclarationBlockArgument {
@@ -192,7 +192,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"method", @"void", @"(", @"^", @")", @"(", @"id", @"obj", @",", @"NSUInteger", @"idx", @")", @"block", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"method", @"void", @"(", @"^", @")", @"(", @"id", @"obj", @",", @"NSUInteger", @"idx", @")", @"block", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMethodDeclarationVariableArgsArgument {
@@ -220,8 +220,8 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(2));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"method1", nil];
-	[self assertMethod:[methods objectAtIndex:1] matchesClassComponents:@"void", @"method2", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"method1", nil];
+	[self assertMethod:methods[1] matchesClassComponents:@"void", @"method2", nil];
 }
 
 - (void)testParseObjectsFromString_shouldIgnoreMethodDeclarationSemicolon {
@@ -234,7 +234,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"method", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"method", nil];
 }
 
 - (void)testParseObjectsFromString_shouldIgnoreMethodDeclarationNestedCode {
@@ -247,7 +247,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesInstanceComponents:@"id", @"method", nil];
+	[self assertMethod:methods[0] matchesInstanceComponents:@"id", @"method", nil];
 }
 
 #pragma mark Properties parsing testing
@@ -262,7 +262,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesPropertyComponents:@"readonly", @"int", @"name", nil];
+	[self assertMethod:methods[0] matchesPropertyComponents:@"readonly", @"int", @"name", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterComplexPropertyDefinition {
@@ -275,7 +275,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesPropertyComponents:@"retain", @"nonatomic", @"IBOutlet", @"NSString", @"*", @"name", nil];
+	[self assertMethod:methods[0] matchesPropertyComponents:@"retain", @"nonatomic", @"IBOutlet", @"NSString", @"*", @"name", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterComplexPropertyDefinition2 {
@@ -288,7 +288,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesPropertyComponents:@"weak", @"IBOutlet", @"id", @"<", @"Protocol", @">", @"delegate", nil];
+	[self assertMethod:methods[0] matchesPropertyComponents:@"weak", @"IBOutlet", @"id", @"<", @"Protocol", @">", @"delegate", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterBlockPropertyDefinition {
@@ -301,7 +301,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesPropertyComponents:@"retain", @"void", @"(", @"^", @")", @"(", @"id", @",", @"NSUInteger", @")", @"name", nil];
+	[self assertMethod:methods[0] matchesPropertyComponents:@"retain", @"void", @"(", @"^", @")", @"(", @"id", @",", @"NSUInteger", @")", @"name", nil];
 }
 
 - (void)testParseObjectsFromString_shouldRegisterAllPropertyDefinitions {
@@ -314,8 +314,8 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(2));
-	[self assertMethod:[methods objectAtIndex:0] matchesPropertyComponents:@"readonly", @"int", @"name1", nil];
-	[self assertMethod:[methods objectAtIndex:1] matchesPropertyComponents:@"readwrite", @"long", @"name2", nil];
+	[self assertMethod:methods[0] matchesPropertyComponents:@"readonly", @"int", @"name1", nil];
+	[self assertMethod:methods[1] matchesPropertyComponents:@"readwrite", @"long", @"name2", nil];
 }
 
 - (void)testParseObjectsFromString_shouldHandleAttributeDirectiveForProperties {
@@ -328,7 +328,7 @@
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
 	assertThatInteger([methods count], equalToInteger(1));
-	[self assertMethod:[methods objectAtIndex:0] matchesPropertyComponents:@"readonly", @"int", @"name", nil];
+	[self assertMethod:methods[0] matchesPropertyComponents:@"readonly", @"int", @"name", nil];
 }
 
 #pragma mark Methods & properties required/optional parsing
@@ -342,8 +342,8 @@
 	// verify
 	GBProtocolData *protocol = [[store protocols] anyObject];
 	NSArray *methods = [[protocol methods] methods];
-	assertThatBool([[methods objectAtIndex:0] isRequired], equalToBool(YES));
-	assertThatBool([[methods objectAtIndex:1] isRequired], equalToBool(YES));
+	assertThatBool([methods[0] isRequired], equalToBool(YES));
+	assertThatBool([methods[1] isRequired], equalToBool(YES));
 }
 
 - (void)testParseObjectsFromString_shouldRegisterOptionalMethodDefinitionForProtocols {
@@ -355,8 +355,8 @@
 	// verify
 	GBProtocolData *protocol = [[store protocols] anyObject];
 	NSArray *methods = [[protocol methods] methods];
-	assertThatBool([[methods objectAtIndex:0] isRequired], equalToBool(NO));
-	assertThatBool([[methods objectAtIndex:1] isRequired], equalToBool(NO));
+	assertThatBool([methods[0] isRequired], equalToBool(NO));
+	assertThatBool([methods[1] isRequired], equalToBool(NO));
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMixedRequiredOptionalMethodDefinitionForProtocols {
@@ -368,9 +368,9 @@
 	// verify
 	GBProtocolData *protocol = [[store protocols] anyObject];
 	NSArray *methods = [[protocol methods] methods];
-	assertThatBool([[methods objectAtIndex:0] isRequired], equalToBool(YES));
-	assertThatBool([[methods objectAtIndex:1] isRequired], equalToBool(NO));
-	assertThatBool([[methods objectAtIndex:2] isRequired], equalToBool(YES));
+	assertThatBool([methods[0] isRequired], equalToBool(YES));
+	assertThatBool([methods[1] isRequired], equalToBool(NO));
+	assertThatBool([methods[2] isRequired], equalToBool(YES));
 }
 
 - (void)testParseObjectsFromString_shouldRegisterRequiredPropertyDefinitionForProtocols {
@@ -382,8 +382,8 @@
 	// verify
 	GBProtocolData *protocol = [[store protocols] anyObject];
 	NSArray *methods = [[protocol methods] methods];
-	assertThatBool([[methods objectAtIndex:0] isRequired], equalToBool(YES));
-	assertThatBool([[methods objectAtIndex:1] isRequired], equalToBool(YES));
+	assertThatBool([methods[0] isRequired], equalToBool(YES));
+	assertThatBool([methods[1] isRequired], equalToBool(YES));
 }
 
 - (void)testParseObjectsFromString_shouldRegisterOptionalPropertyDefinitionForProtocols {
@@ -395,8 +395,8 @@
 	// verify
 	GBProtocolData *protocol = [[store protocols] anyObject];
 	NSArray *methods = [[protocol methods] methods];
-	assertThatBool([[methods objectAtIndex:0] isRequired], equalToBool(NO));
-	assertThatBool([[methods objectAtIndex:1] isRequired], equalToBool(NO));
+	assertThatBool([methods[0] isRequired], equalToBool(NO));
+	assertThatBool([methods[1] isRequired], equalToBool(NO));
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMixedRequiredOptionalPropertyDefinitionForProtocols {
@@ -408,9 +408,9 @@
 	// verify
 	GBProtocolData *protocol = [[store protocols] anyObject];
 	NSArray *methods = [[protocol methods] methods];
-	assertThatBool([[methods objectAtIndex:0] isRequired], equalToBool(YES));
-	assertThatBool([[methods objectAtIndex:1] isRequired], equalToBool(NO));
-	assertThatBool([[methods objectAtIndex:2] isRequired], equalToBool(YES));
+	assertThatBool([methods[0] isRequired], equalToBool(YES));
+	assertThatBool([methods[1] isRequired], equalToBool(NO));
+	assertThatBool([methods[2] isRequired], equalToBool(YES));
 }
 
 #pragma mark Methods & properties extras parsing
@@ -504,8 +504,8 @@
 	// verify
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
-	assertThat([[(GBModelBase *)[methods objectAtIndex:0] comment] stringValue], is(@"Comment1"));
-	assertThat([[(GBModelBase *)[methods objectAtIndex:1] comment] stringValue], is(@"Comment2"));
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1"));
+	assertThat([[(GBModelBase *) methods[1] comment] stringValue], is(@"Comment2"));
 }
 
 - (void)testParseObjectsFromString_shouldProperlyResetMethodComments {
@@ -517,8 +517,8 @@
 	// verify
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
-	assertThat([[(GBModelBase *)[methods objectAtIndex:0] comment] stringValue], is(@"Comment1"));
-	assertThat([(GBModelBase *)[methods objectAtIndex:1] comment], is(nil));
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1"));
+	assertThat([(GBModelBase *) methods[1] comment], is(nil));
 }
 
 - (void)testParseObjectsFromString_shouldProperlyResetPropertyComments {
@@ -530,8 +530,8 @@
 	// verify
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
-	assertThat([[(GBModelBase *)[methods objectAtIndex:0] comment] stringValue], is(@"Comment1"));
-	assertThat([(GBModelBase *)[methods objectAtIndex:1] comment], is(nil));
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1"));
+	assertThat([(GBModelBase *) methods[1] comment], is(nil));
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMethodDeclarationComment {
@@ -543,8 +543,8 @@
 	// verify
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
-	assertThat([[(GBModelBase *)[methods objectAtIndex:0] comment] stringValue], is(@"Comment1"));
-	assertThat([[(GBModelBase *)[methods objectAtIndex:1] comment] stringValue], is(@"Comment2"));
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1"));
+	assertThat([[(GBModelBase *) methods[1] comment] stringValue], is(@"Comment2"));
 }
 
 - (void)testParseObjectsFromString_shouldRegisterPropertyDefinitionComment {
@@ -556,8 +556,8 @@
 	// verify
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
-	assertThat([[(GBModelBase *)[methods objectAtIndex:0] comment] stringValue], is(@"Comment1"));
-	assertThat([[(GBModelBase *)[methods objectAtIndex:1] comment] stringValue], is(@"Comment2"));
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1"));
+	assertThat([[(GBModelBase *) methods[1] comment] stringValue], is(@"Comment2"));
 }
 
 - (void)testParseObjectsFromString_shouldRegisterMethodDefinitionCommentSourceFileAndLineNumber {
@@ -568,7 +568,7 @@
 	[parser parseObjectsFromString:@"/// comment\n\n#define SOMETHING\n\n@interface MyClass\n/** comment */\n-(void)method; @end" sourceFile:@"filename.h" toStore:store];
 	// verify
 	GBClassData *class = [[store classes] anyObject];
-	GBMethodData *method = [[[class methods] methods] objectAtIndex:0];
+	GBMethodData *method = [[class methods] methods][0];
 	assertThat(method.comment.sourceInfo.filename, is(@"filename.h"));
 	assertThatInteger(method.comment.sourceInfo.lineNumber, equalToInteger(6));
 }
@@ -581,12 +581,12 @@
 	[parser parseObjectsFromString:@"/// comment\n\n#define SOMETHING\n\n@implementation MyClass\n/** comment */\n-(void)method{} @end" sourceFile:@"filename.h" toStore:store];
 	// verify
 	GBClassData *class = [[store classes] anyObject];
-	GBMethodData *method = [[[class methods] methods] objectAtIndex:0];
+	GBMethodData *method = [[class methods] methods][0];
 	assertThat(method.comment.sourceInfo.filename, is(@"filename.h"));
 	assertThatInteger(method.comment.sourceInfo.lineNumber, equalToInteger(6));
 }
 
-- (void)testParseObjectsFromString_shouldRegisterPropertyDefinitionCommentSourceFileAndLineNumber {
+- (void)testPqarseObjectsFromString_shouldRegisterPropertyDefinitionCommentSourceFileAndLineNumber {
 	// setup
 	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
 	GBStore *store = [[GBStore alloc] init];
@@ -594,9 +594,311 @@
 	[parser parseObjectsFromString:@"/// comment\n\n#define SOMETHING\n\n@interface MyClass\n/** comment */\n@property(readonly)int p1; @end" sourceFile:@"filename.h" toStore:store];
 	// verify
 	GBClassData *class = [[store classes] anyObject];
-	GBMethodData *method = [[[class methods] methods] objectAtIndex:0];
+	GBMethodData *method = [[class methods] methods][0];
 	assertThat(method.comment.sourceInfo.filename, is(@"filename.h"));
 	assertThatInteger(method.comment.sourceInfo.lineNumber, equalToInteger(6));
+}
+
+#pragma mark Postfix comments
+
+- (void)testParseObjectsFromString_shouldRegisterEnumPostfixComment {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"/// copyright\ntypedef NS_ENUM(NSUInteger, enumName) ///< postfix\n {\nVALUE1, VALUE2\n}\n\n#define SOMETHING_ELSE" sourceFile:@"filename.h" toStore:store];
+	// verify
+   GBTypedefEnumData *enumData = [store typedefEnumWithName:@"enumName"];
+
+	assertThat([[enumData comment] stringValue], is(@"postfix"));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterEnumValuePostfixComment {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"/// copyright\ntypedef NS_ENUM(NSUInteger, enumName) {\nVALUE1 ///< postfix1\n,VALUE2, ///<postfix2\n/** comment3 */VALUE3, /** comment4 */VALUE4, ///< postfix4 (ignored)\n/** comment5 */VALUE5 ///< postfix 5 (ignored)\n}\n\n#define SOMETHING_ELSE" sourceFile:@"filename.h" toStore:store];
+	// verify
+   GBTypedefEnumData *enumData = [store typedefEnumWithName:@"enumName"];
+   GBEnumConstantProvider *constantsProvider = [enumData constants];
+   NSArray *constants = [constantsProvider constants];
+
+	assertThat([[(GBModelBase *) constants[0] comment] stringValue], is(@"postfix1"));
+	assertThat([[(GBModelBase *) constants[1] comment] stringValue], is(@"postfix2"));
+	assertThat([[(GBModelBase *) constants[2] comment] stringValue], is(@"comment3"));
+	assertThat([[(GBModelBase *) constants[3] comment] stringValue], is(@"comment4"));
+	assertThat([[(GBModelBase *) constants[4] comment] stringValue], is(@"comment5"));
+	assertThatInteger([constants count], equalToInteger(5));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterOptionsPostfixComment {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"/// copyright\ntypedef NS_OPTIONS(NSUInteger, optionName) ///< postfix\n {\nVALUE1, VALUE2\n}\n\n#define SOMETHING_ELSE" sourceFile:@"filename.h" toStore:store];
+	// verify
+   GBTypedefEnumData *optionData = [store typedefEnumWithName:@"optionName"];
+
+	assertThat([[optionData comment] stringValue], is(@"postfix"));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterOptionsValuePostfixComment {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"/// copyright\ntypedef NS_OPTIONS(NSUInteger, optionName) {\nVALUE1 ///< postfix1\n,VALUE2, ///<postfix2\n/** comment3 */VALUE3, /** comment4 */VALUE4, ///< postfix4 (ignored)\n/** comment5 */VALUE5 ///< postfix 5 (ignored)\n}\n\n#define SOMETHING_ELSE" sourceFile:@"filename.h" toStore:store];
+	// verify
+   GBTypedefEnumData *optionData = [store typedefEnumWithName:@"optionName"];
+   GBEnumConstantProvider *constantsProvider = [optionData constants];
+   NSArray *constants = [constantsProvider constants];
+
+	assertThat([[(GBModelBase *) constants[0] comment] stringValue], is(@"postfix1"));
+	assertThat([[(GBModelBase *) constants[1] comment] stringValue], is(@"postfix2"));
+	assertThat([[(GBModelBase *) constants[2] comment] stringValue], is(@"comment3"));
+	assertThat([[(GBModelBase *) constants[3] comment] stringValue], is(@"comment4"));
+	assertThat([[(GBModelBase *) constants[4] comment] stringValue], is(@"comment5"));
+	assertThatInteger([constants count], equalToInteger(5));
+}
+
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDeclarationCommentIgnorePostfix {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"@implementation MyClass /** Comment1 */ -(id)method1 ///< postfix1\n{} /** Comment2 */ +(void)method2{}///< postfix2\n @end" sourceFile:@"filename.m" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1"));
+	assertThat([[(GBModelBase *) methods[1] comment] stringValue], is(@"Comment2"));
+	assertThatInteger([methods count], equalToInteger(2));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDeclarationPostfixComment {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"@implementation MyClass -(id)method1 ///< Comment1\n{} +(void)method2///< Comment2\n{} @end" sourceFile:@"filename.m" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1"));
+	assertThat([[(GBModelBase *) methods[1] comment] stringValue], is(@"Comment2"));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDeclarationPostfixCommentProperSourceLineNumber {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"/// comment\n\n#define SOMETHING\n\n@implementation MyClass\n-(void)method ///< comment\n{} @end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	GBMethodData *method = [[class methods] methods][0];
+	assertThat(method.comment.sourceInfo.filename, is(@"filename.h"));
+	assertThatInteger(method.comment.sourceInfo.lineNumber, equalToInteger(6));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDeclarationMultilinePostfixComment {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+   [parser parseObjectsFromString:@"@implementation MyClass -(id)method1:(id)param1 ///< Comment1\npart2:(id)param2 ///< Comment2\n{}\n@end" sourceFile:@"filename.m" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1\nComment2"));
+	assertThatInteger([methods count], equalToInteger(1));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDeclarationMultilinePostfixCommentLong {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+   [parser parseObjectsFromString:@"@implementation MyClass -(id)method1:(id)param1 ///< Comment1\npart2:(id)param2 ///< Comment2\n///< Comment3\n{}\n@end" sourceFile:@"filename.m" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1\nComment2\nComment3"));
+	assertThatInteger([methods count], equalToInteger(1));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDeclarationMultilinePostfixCommentPropperSourceLineNumber {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+   [parser parseObjectsFromString:@"@implementation MyClass\n -(id)method1:(id)param1 ///< Comment1\npart2:(id)param2 ///< Comment2\n{}\n@end" sourceFile:@"filename.m" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	GBMethodData *method = [[class methods] methods][0];
+	assertThat(method.comment.sourceInfo.filename, is(@"filename.m"));
+	assertThatInteger(method.comment.sourceInfo.lineNumber, equalToInteger(2));
+}
+
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDefinitionCommentIgnorePostfixComment {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"@interface MyClass /** Comment1 */ -(id)method1; ///< postfix\n /** Comment2 */ +(void)method2 ///< postfix\n; @end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1"));
+	assertThat([[(GBModelBase *) methods[1] comment] stringValue], is(@"Comment2"));
+	assertThatInteger([methods count], equalToInteger(2));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDefinitionPostfixComment {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"/// comment\n\n#define SOMETHING\n\n@interface MyClass\n-(id)method1; ///< Comment1\n-(id)method2;\n///< Comment2\n @end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1"));
+	assertThat([[(GBModelBase *) methods[1] comment] stringValue], is(@"Comment2"));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDefinitionPostfixCommentSourceFileAndLineNumber {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"/// comment\n\n#define SOMETHING\n\n@interface MyClass\n-(void)method; ///< Comment1\n @end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	GBMethodData *method = [[class methods] methods][0];
+	assertThat(method.comment.sourceInfo.filename, is(@"filename.h"));
+	assertThatInteger(method.comment.sourceInfo.lineNumber, equalToInteger(6));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDefinitionMultilinePostfixComment {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+   [parser parseObjectsFromString:@"@interface MyClass -(id)method1:(id)param1 ///< Comment1\npart2:(id)param2; ///< Comment2\n@end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1\nComment2"));
+	assertThatInteger([methods count], equalToInteger(1));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDefinitionMultilinePostfixCommentLong {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+   [parser parseObjectsFromString:@"@interface MyClass -(id)method1:(id)param1 ///< Comment1\npart2:(id)param2 ///< Comment2\n///< Comment3\n;///< Comment4\n@end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1\nComment2\nComment3\nComment4"));
+	assertThatInteger([methods count], equalToInteger(1));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterMethodDefinitionMultilinePostfixCommentPropperSourceLineNumber {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+   [parser parseObjectsFromString:@"///< comment\n/// comment\n#define SOMETHING\n\n@interface MyClass\n -(id)method1:(id)param1 ///< Comment1\npart2:(id)param2 ///< Comment2\n;\n@end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	GBMethodData *method = [[class methods] methods][0];
+	assertThat(method.comment.sourceInfo.filename, is(@"filename.h"));
+	assertThatInteger(method.comment.sourceInfo.lineNumber, equalToInteger(6));
+}
+
+
+- (void)testParseObjectsFromString_shouldRegisterPropertyDefinitionPostfixComment {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"@interface MyClass @property(readonly)NSInteger p1; ///< Comment1\n @property(readonly)NSInteger p2; ///< Comment2\n @end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"Comment1"));
+	assertThat([[(GBModelBase *) methods[1] comment] stringValue], is(@"Comment2"));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterPropertyDefinitionPostfixCommentLong {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"@interface MyClass @property///< postfix1\n(readonly)///< postfix2\nNSInteger///<postfix3\n p1///<postfix4\n; ///< postfix5\n @end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"postfix1\npostfix2\npostfix3\npostfix4\npostfix5"));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterPropertyDefinitionPostfixCommentSourceFileAndLineNumber {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"/// comment\n\n#define SOMETHING\n\n@interface MyClass\n@property(readonly)int p1;///< comment\n @end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	GBMethodData *method = [[class methods] methods][0];
+	assertThat(method.comment.sourceInfo.filename, is(@"filename.h"));
+	assertThatInteger(method.comment.sourceInfo.lineNumber, equalToInteger(6));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterPropertyDefinitionCommentIgnorePostfixComment {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"@interface MyClass\n/** prefix */\n@property(readonly)int p1;///< postfix\n @end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"prefix"));
+	assertThatInteger([methods count], equalToInteger(1));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterPropertyDefinitionPostfixCommentInsideDefinition {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"@interface MyClass\n@property(readonly)///< inside\n int p1;\n @end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"inside"));
+	assertThatInteger([methods count], equalToInteger(1));
+}
+
+- (void)testParseObjectsFromString_shouldRegisterPropertyDefinitionPostfixCommentInsideDefinitionMultiline {
+	// setup
+	GBObjectiveCParser *parser = [GBObjectiveCParser parserWithSettingsProvider:[GBTestObjectsRegistry mockSettingsProvider]];
+	GBStore *store = [[GBStore alloc] init];
+	// execute
+	[parser parseObjectsFromString:@"@interface MyClass\n@property(readonly)///< inside\n int p1; ///<after\n @end" sourceFile:@"filename.h" toStore:store];
+	// verify
+	GBClassData *class = [[store classes] anyObject];
+	NSArray *methods = [[class methods] methods];
+	assertThat([[(GBModelBase *) methods[0] comment] stringValue], is(@"inside\nafter"));
+	assertThatInteger([methods count], equalToInteger(1));
 }
 
 #pragma mark Various cases
@@ -616,7 +918,7 @@
 	// verify
 	GBClassData *class = [[store classes] anyObject];
 	NSArray *methods = [[class methods] methods];
-	GBMethodData *method = [methods objectAtIndex:0];
+	GBMethodData *method = methods[0];
 	assertThatInteger([methods count], equalToInteger(1));
 	[self assertMethod:method matchesInstanceComponents:@"void", @"method", nil];	
 	assertThat(method.comment.stringValue, is(@"comment"));

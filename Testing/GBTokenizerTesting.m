@@ -197,10 +197,10 @@
 	}];
 	// verify
 	assertThatInteger([tokens count], equalToInteger(4));
-	assertThat([tokens objectAtIndex:0], is(@"one"));
-	assertThat([tokens objectAtIndex:1], is(@"two"));
-	assertThat([tokens objectAtIndex:2], is(@"three"));
-	assertThat([tokens objectAtIndex:3], is(@"four"));
+	assertThat(tokens[0], is(@"one"));
+	assertThat(tokens[1], is(@"two"));
+	assertThat(tokens[2], is(@"three"));
+	assertThat(tokens[3], is(@"four"));
 }
 
 - (void)testConsumeFromToUsingBlock_shouldReportAllTokensFromTo {
@@ -213,9 +213,9 @@
 	}];
 	// verify
 	assertThatInteger([tokens count], equalToInteger(3));
-	assertThat([tokens objectAtIndex:0], is(@"two"));
-	assertThat([tokens objectAtIndex:1], is(@"three"));
-	assertThat([tokens objectAtIndex:2], is(@"four"));
+	assertThat(tokens[0], is(@"two"));
+	assertThat(tokens[1], is(@"three"));
+	assertThat(tokens[2], is(@"four"));
 }
 
 - (void)testConsumeFromToUsingBlock_shouldReturnIfStartTokenDoesntMatch {
@@ -237,6 +237,15 @@
 	// execute
 	[tokenizer consumeFrom:nil to:@"five" usingBlock:^(PKToken *token, BOOL *consume, BOOL *stop) {
 	}];
+	// verify
+	assertThat([[tokenizer currentToken] stringValue], is(@"six"));
+}
+
+- (void)testConsumeFromToUsingBlock_shouldAcceptNilBlock {
+	// setup
+	GBTokenizer *tokenizer = [GBTokenizer tokenizerWithSource:[self longTokenizer] filename:@"file"];
+	// execute
+	[tokenizer consumeFrom:nil to:@"five" usingBlock:nil];
 	// verify
 	assertThat([[tokenizer currentToken] stringValue], is(@"six"));
 }
@@ -292,6 +301,20 @@
 	GBTokenizer *tokenizer = [GBTokenizer tokenizerWithSource:[PKTokenizer tokenizerWithString:@"/// line1\n/// line2\n   ONE"] filename:@"file"];
 	// verify
 	assertThat([tokenizer.lastComment stringValue], is(@"line1\nline2"));
+}
+
+- (void)testLastCommentString_shouldGroupSingleLineCommentsIfIndentationMatches {
+	// setup & execute
+	GBTokenizer *tokenizer = [GBTokenizer tokenizerWithSource:[PKTokenizer tokenizerWithString:@"    /// line1\n    /// line2\n   ONE"] filename:@"file"];
+	// verify
+	assertThat([tokenizer.lastComment stringValue], is(@"line1\nline2"));
+}
+
+- (void)testLastCommentString_shouldIgnoreSingleLineCommentsIfIndentationDoesNotMatch {
+	// setup & execute
+	GBTokenizer *tokenizer = [GBTokenizer tokenizerWithSource:[PKTokenizer tokenizerWithString:@"    /// line1\n  /// line2\n   ONE"] filename:@"file"];
+	// verify
+	assertThat([tokenizer.lastComment stringValue], is(@"line2"));
 }
 
 - (void)testLastCommentString_shouldIgnoreSingleLineCommentsIfEmptyLineFoundInBetween {
@@ -395,6 +418,28 @@
 	// verify
 	assertThat(tokenizer.previousComment.stringValue, is(@"@name name"));
 	assertThat(tokenizer.lastComment, is(nil));
+}
+
+- (void)testPostfixComment_shouldDetectSimplePostfixComment {
+	// setup & execute
+	GBApplicationSettingsProvider *settings = [GBTestObjectsRegistry realSettingsProvider];
+	GBTokenizer *tokenizer = [GBTokenizer tokenizerWithSource:[PKTokenizer tokenizerWithString:@"typedef NS_ENUM(NSUInteger, e) {\nVALUE1,   ///< postfix1\nVALUE2 };"] filename:@"file" settings:settings];
+	// verify
+   [tokenizer consume:8];
+   PKToken *startToken = tokenizer.currentToken;
+   [tokenizer consume:6];
+   assertThat([tokenizer postfixCommentFrom:startToken].stringValue, is(@"postfix1"));
+}
+
+- (void)testPostfixComment_shouldDetectMultilinePostfixComment {
+	// setup & execute
+	GBApplicationSettingsProvider *settings = [GBTestObjectsRegistry realSettingsProvider];
+	GBTokenizer *tokenizer = [GBTokenizer tokenizerWithSource:[PKTokenizer tokenizerWithString:@"typedef NS_ENUM(NSUInteger, e) {\nVALUE1,   ///< postfix1\n///< postfix2\nVALUE2 };"] filename:@"file" settings:settings];
+	// verify
+   [tokenizer consume:8];
+   PKToken *startToken = tokenizer.currentToken;
+   [tokenizer consume:7];
+   assertThat([tokenizer postfixCommentFrom:startToken].stringValue, is(@"postfix1\npostfix2"));
 }
 
 #pragma mark Miscellaneous methods

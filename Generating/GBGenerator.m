@@ -10,6 +10,7 @@
 #import "GBApplicationSettingsProvider.h"
 #import "GBHTMLOutputGenerator.h"
 #import "GBDocSetOutputGenerator.h"
+#import "GBDocSetFinalizeGenerator.h"
 #import "GBDocSetInstallGenerator.h"
 #import "GBDocSetPublishGenerator.h"
 #import "GBGenerator.h"
@@ -19,8 +20,8 @@
 - (void)setupGeneratorStepsWithStore:(id)store;
 - (void)runGeneratorStepsWithStore:(id)store;
 @property (readonly) NSMutableArray *outputGenerators;
-@property (retain) GBStore *store;
-@property (retain) GBApplicationSettingsProvider *settings;
+@property (strong) GBStore *store;
+@property (strong) GBApplicationSettingsProvider *settings;
 
 @end
 
@@ -31,7 +32,7 @@
 #pragma mark Initialization & disposal
 
 + (id)generatorWithSettingsProvider:(id)settingsProvider {
-	return [[[self alloc] initWithSettingsProvider:settingsProvider] autorelease];
+	return [[self alloc] initWithSettingsProvider:settingsProvider];
 }
 
 - (id)initWithSettingsProvider:(id)settingsProvider {
@@ -60,6 +61,7 @@
 	[self.outputGenerators addObject:[GBHTMLOutputGenerator generatorWithSettingsProvider:self.settings]];
 	if (!self.settings.createDocSet) return;
 	[self.outputGenerators addObject:[GBDocSetOutputGenerator generatorWithSettingsProvider:self.settings]];
+	[self.outputGenerators addObject:[GBDocSetFinalizeGenerator generatorWithSettingsProvider:self.settings]];
 	if (self.settings.installDocSet) {
         [self.outputGenerators addObject:[GBDocSetInstallGenerator generatorWithSettingsProvider:self.settings]];
     }

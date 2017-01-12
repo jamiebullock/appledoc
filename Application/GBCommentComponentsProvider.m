@@ -6,7 +6,7 @@
 //  Copyright (C) 2010, Gentle Bytes. All rights reserved.
 //
 
-#import "RegexKitLite.h"
+#import <RegexKitLite/RegexKitLite.h>
 #import "GBCommentComponentsProvider.h"
 
 #define GBRETURN_ON_DEMAND(regex) \
@@ -31,7 +31,7 @@
 #pragma mark Initialization & disposal
 
 + (id)provider {
-	return [[[self alloc] init] autorelease];
+	return [[self alloc] init];
 }
 
 - (id)init {
@@ -97,11 +97,11 @@
 #pragma mark Markdown detection
 
 - (NSString *)markdownInlineLinkRegex {
-	GBRETURN_ON_DEMAND(@"(?:\\[((?:[^]]+)|(?:\\[[^]]+\\]))\\]\\(([^\\s]+)(?:\\s*\"([^\"]+)\")?\\))");
+    GBRETURN_ON_DEMAND(@"!?(?:\\[((?:!\\[[^]]+?\\]\\([^)]+?\\))|(?:\\[[^]]+?\\])|(?:[^]]+?))\\]\\(([^\\s]+)(?:\\s*\"([^\"]+)\")?\\))");
 }
 
 - (NSString *)markdownReferenceLinkRegex {
-	GBRETURN_ON_DEMAND(@"(?s:\\[([^]]+)\\]:\\s*([^\\s]+)(?:\\s*\"([^\"]+)\")?\\s*$)");
+    GBRETURN_ON_DEMAND(@"(?s:\\[([^]]+)\\]:\\s*([^\\s]+)(?:\\s*\"([^\"]+)\")?)");
 }
 
 #pragma mark Cross references detection

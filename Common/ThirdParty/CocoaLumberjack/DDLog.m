@@ -550,13 +550,9 @@ static NSUInteger GBStoreLine = 0;
 	
 	Method getter = class_getClassMethod(class, getterSel);
 	Method setter = class_getClassMethod(class, setterSel);
-	
-	if ((getter != NULL) && (setter != NULL))
-	{
-		return YES;
-	}
-	
-	return NO;
+
+	return (getter != NULL) && (setter != NULL);
+
 }
 
 + (NSArray *)registeredClasses
@@ -579,7 +575,7 @@ static NSUInteger GBStoreLine = 0;
 	// The numClasses method now tells us how many classes we have.
 	// So we can allocate our buffer, and get pointers to all the class definitions.
 	
-	Class *classes = malloc(sizeof(Class) * numClasses);
+	Class *classes = (Class*)malloc(sizeof(Class) * numClasses);
 	
 	numClasses = objc_getClassList(classes, numClasses);
 	

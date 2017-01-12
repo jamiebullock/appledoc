@@ -419,6 +419,15 @@
 	assertThatBool(settings2.warnOnMissingMethodArgument, equalToBool(NO));
 }
 
+- (void)testWarnOnUnsupportedTypedefEnum_shouldAssignValueToSettings {
+    // setup & execute
+    GBApplicationSettingsProvider *settings1 = [self settingsByRunningWithArgs:@"--warn-unsupported-typedef-enum", nil];
+    GBApplicationSettingsProvider *settings2 = [self settingsByRunningWithArgs:@"--no-warn-unsupported-typedef-enum", nil];
+    // verify
+    assertThatBool(settings1.warnOnUnsupportedTypedefEnum, equalToBool(YES));
+    assertThatBool(settings2.warnOnUnsupportedTypedefEnum, equalToBool(NO));
+}
+
 #pragma mark Documentation set settings testing
 
 - (void)testDocSetBudnleIdentifier_shouldAssignValueToSettings {
@@ -579,32 +588,29 @@
 	va_end(args);
 	
 	// setup the application and inject settings to it.
-	GBAppledocApplication *application = [[[GBAppledocApplication alloc] init] autorelease];
+	GBAppledocApplication *application = [[GBAppledocApplication alloc] init];
 	GBApplicationSettingsProvider *result = [GBApplicationSettingsProvider provider];
 	[application setValue:result forKey:@"settings"];
 	
 	// send all KVC messages for all options
 	for (NSUInteger i=0; i<[arguments count]; i++) {
-		NSString *arg = [arguments objectAtIndex:i];
+		NSString *arg = arguments[i];
 		if ([arg hasPrefix:@"--"]) {
 			// get the key corresponding to the argument
-			NSString *key = [DDGetoptLongParser keyFromOption:arg];
+			NSString *key = [DDGetoptLongParser optionToKey:arg];
             
-            // When passed --docset-xml-filename, +[DDGetoptLongParser keyFromOption:] will
-            // return docsetXmlFilename but we need instead of docsetXMLFilename.
-            key = [key stringByReplacingOccurrencesOfString:@"Xml" withString:@"XML"];
             key = [key stringByReplacingOccurrencesOfString:@"xcrun" withString:@"xCRun"];
 			
 			// if we have a value following, use it for KVC, otherwise just send YES
 			if (i < [arguments count] - 1) {
-				NSString *value = [arguments objectAtIndex:i+1];
+				NSString *value = arguments[i + 1];
 				if (![value hasPrefix:@"--"]) {
 					[application setValue:value forKey:key];
 					i++;
 					continue;
 				}
 			}
-			[application setValue:[NSNumber numberWithBool:YES] forKey:key];
+			[application setValue:@YES forKey:key];
 		}
 	}	
 	

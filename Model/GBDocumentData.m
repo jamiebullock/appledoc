@@ -15,7 +15,7 @@
 #pragma mark Initialization & disposal
 
 + (id)documentDataWithContents:(NSString *)contents path:(NSString *)path {
-	return [[[self alloc] initWithContents:contents path:path] autorelease];
+	return [[self alloc] initWithContents:contents path:path];
 }
 
 + (id)documentDataWithContents:(NSString *)contents path:(NSString *)path basePath:(NSString *)basePath {
@@ -25,23 +25,23 @@
 }
 
 - (id)initWithContents:(NSString *)contents path:(NSString *)path {
-	NSParameterAssert(contents != nil);
-	GBLogDebug(@"Initializing document with contents %@...", [contents normalizedDescription]);
-	self = [super init];
-	if (self) {
-		GBSourceInfo *info = [GBSourceInfo infoWithFilename:path lineNumber:1];
-		[self registerSourceInfo:info];
-		self.nameOfDocument = [path lastPathComponent];
-		self.pathOfDocument = path;
-		self.basePathOfDocument = @"";
-		self.comment = [GBComment commentWithStringValue:contents];
-		self.comment.sourceInfo = info;
-		_adoptedProtocols = [[GBAdoptedProtocolsProvider alloc] initWithParentObject:self];
-		_methods = [[GBMethodsProvider alloc] initWithParentObject:self];
+    NSParameterAssert(contents != nil);
+    GBLogDebug(@"Initializing document with contents %@...", [contents normalizedDescription]);
+    self = [super init];
+    if (self) {
+        GBSourceInfo *info = [GBSourceInfo infoWithFilename:path lineNumber:1];
+        [self registerSourceInfo:info];
+        self.nameOfDocument = [path lastPathComponent];
+        self.pathOfDocument = path;
+        self.basePathOfDocument = @"";
+        self.comment = [GBComment commentWithStringValue:contents];
+        self.comment.sourceInfo = info;
+        _adoptedProtocols = [[GBAdoptedProtocolsProvider alloc] initWithParentObject:self];
+        _methods = [[GBMethodsProvider alloc] initWithParentObject:self];
         
         self.prettyNameOfDocument = [[self.nameOfDocument stringByDeletingPathExtension]stringByReplacingOccurrencesOfString:@"-template" withString:@""];
-	}
-	return self;
+    }
+    return self;
 }
 
 #pragma mark Overriden methods

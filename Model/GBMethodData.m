@@ -6,13 +6,16 @@
 //  Copyright (C) 2010, Gentle Bytes. All rights reserved.
 //
 
-#import "GRMustache.h"
+#import <GRMustache/GRMustache.h>
 #import "GBMethodArgument.h"
 #import "GBMethodSectionData.h"
 #import "GBMethodData.h"
 #import "GBClassData.h"
 #import "GBCategoryData.h"
-#import "RegexKitLite.h"
+#import <RegexKitLite/RegexKitLite.h>
+
+#import "GBStore.h"
+#import "GBApplicationSettingsProvider.h"
 
 @interface GBMethodData ()
 
@@ -39,7 +42,7 @@
 
 + (id)methodDataWithType:(GBMethodType)type result:(NSArray *)result arguments:(NSArray *)arguments {
 	NSParameterAssert([arguments count] >= 1);
-	return [[[self alloc] initWithType:type attributes:[NSArray array] result:result arguments:arguments] autorelease];
+	return [[self alloc] initWithType:type attributes:[NSArray array] result:result arguments:arguments];
 }
 
 + (id)propertyDataWithAttributes:(NSArray *)attributes components:(NSArray *)components {
@@ -105,21 +108,21 @@
 	if ([results containsObject:propertyName]) [results removeObject:propertyName];
     
 	GBMethodArgument *argument = [GBMethodArgument methodArgumentWithName:propertyName];
-	return [[[self alloc] initWithType:GBMethodTypeProperty attributes:attributes result:results arguments:[NSArray arrayWithObject:argument]] autorelease];
+	return [[self alloc] initWithType:GBMethodTypeProperty attributes:attributes result:results arguments:@[argument]];
 }
 
 - (id)initWithType:(GBMethodType)type attributes:(NSArray *)attributes result:(NSArray *)result arguments:(NSArray *)arguments {
 	self = [super init];
 	if (self) {
 		_methodType = type;
-		_methodAttributes = [attributes retain];
-		_methodResultTypes = [result retain];
-		_methodArguments = [arguments retain];
-		_methodPrefix = [[self prefixFromAssignedData] retain];
-		_methodSelectorDelimiter = [[self selectorDelimiterFromAssignedData] retain];
-		_methodSelector = [[self selectorFromAssignedData] retain];
+		_methodAttributes = attributes;
+		_methodResultTypes = result;
+		_methodArguments = arguments;
+		_methodPrefix = [self prefixFromAssignedData];
+		_methodSelectorDelimiter = [self selectorDelimiterFromAssignedData];
+		_methodSelector = [self selectorFromAssignedData];
         _methodReturnType = (NSString *)self.methodResultTypes.firstObject;
-		_prefixedMethodSelector = [[self prefixedSelectorFromAssignedData] retain];
+		_prefixedMethodSelector = [self prefixedSelectorFromAssignedData];
 	}
 	return self;
 }
@@ -214,7 +217,7 @@
 		if (isLast || isPointer) appendSpace = NO;
 		
 		// We should not add space between components of a protocol (i.e. id<ProtocolName> should be written without any space). Because we've alreay
-		if (!isLast && idx+1 < [types count] && [[types objectAtIndex:idx+1] isEqualToString:@"<"])
+		if (!isLast && idx+1 < [types count] && [types[idx + 1] isEqualToString:@"<"])
 			insideProtocol = YES;
 		else if ([type isEqualToString:@">"])
 			insideProtocol = NO;
@@ -228,17 +231,39 @@
 }
 
 - (NSDictionary *)formattedComponentWithValue:(NSString *)value {
-	return [self formattedComponentWithValue:value style:0 href:nil];
+    
+    NSString *href = nil;
+    id referencedObject = nil;
+    if (!(referencedObject = [[GBStore sharedStore] classWithName: value])) {
+        if (!(referencedObject = [[GBStore sharedStore] categoryWithName: value])) {
+            if (!(referencedObject = [[GBStore sharedStore] protocolWithName: value])) {
+                if (!(referencedObject = [[GBStore sharedStore] typedefEnumWithName: value])) {
+                    if (!(referencedObject = [[GBStore sharedStore] typedefBlockWithName: value])) {
+                        referencedObject = [[GBStore sharedStore] documentWithName: value];
+                    }
+                }
+            }
+        }
+    }
+    
+    if (referencedObject != nil) {
+        NSString *relPath = [[GBApplicationSettingsProvider sharedApplicationSettingsProvider] htmlRelativePathToIndexFromObject: self];
+        NSString *linkPath = [[GBApplicationSettingsProvider sharedApplicationSettingsProvider] htmlReferenceForObject:referencedObject fromSource: nil];
+        
+        href = [relPath stringByAppendingPathComponent: linkPath];
+    }
+    
+	return [self formattedComponentWithValue:value style:0 href:href];
 }
 
 - (NSDictionary *)formattedComponentWithValue:(NSString *)value style:(NSUInteger)style href:(NSString *)href {
 	NSMutableDictionary *result = [NSMutableDictionary dictionaryWithCapacity:3];
-	[result setObject:value forKey:@"value"];
+	result[@"value"] = value;
 	if (style > 0) {
-		[result setObject:[NSNumber numberWithUnsignedInt:style] forKey:@"style"];
-		[result setObject:[NSNumber numberWithBool:YES] forKey:@"emphasized"];
+		result[@"style"] = [NSNumber numberWithUnsignedInt:style];
+		result[@"emphasized"] = @YES;
 	}
-	if (href) [result setObject:href forKey:@"href"];
+	if (href) result[@"href"] = href;
 	return result;
 }
 
@@ -360,8 +385,8 @@
 	if ([source comment] && ![self comment]) {
 		GBLogDebug(@"%@: Checking for difference due to comment status...", self);
 		for (NSUInteger i=0; i<[self.methodArguments count]; i++) {
-			GBMethodArgument *ourArgument = [[self methodArguments] objectAtIndex:i];
-			GBMethodArgument *otherArgument = [[source methodArguments] objectAtIndex:i];
+			GBMethodArgument *ourArgument = [self methodArguments][i];
+			GBMethodArgument *otherArgument = [source methodArguments][i];
 			if (![ourArgument.argumentVar isEqualToString:otherArgument.argumentVar]) {
 				GBLogDebug(@"%@: Changing %ld. argument var name from %@ to %@...", self, i+1, ourArgument.argumentVar, otherArgument.argumentVar);
 				ourArgument.argumentVar = otherArgument.argumentVar;

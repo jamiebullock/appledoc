@@ -31,7 +31,8 @@
 	// setup
 	GBProcessor *processor = [GBProcessor processorWithSettingsProvider:[self settingsProviderKeepObjects:YES keepMembers:NO]];
 	GBClassData *class = [self classWithComment:NO];
-	GBStore *store = [GBTestObjectsRegistry storeByPerformingSelector:@selector(registerClass:) withObject:class];
+    GBStore *store = [GBTestObjectsRegistry store];
+    [store registerClass:class];
 	// execute
 	[processor processObjectsFromStore:store];
 	// verify
@@ -43,7 +44,8 @@
 	// setup
 	GBProcessor *processor = [GBProcessor processorWithSettingsProvider:[self settingsProviderKeepObjects:NO keepMembers:NO]];
 	GBClassData *class = [self classWithComment:NO];
-	GBStore *store = [GBTestObjectsRegistry storeByPerformingSelector:@selector(registerClass:) withObject:class];
+    GBStore *store = [GBTestObjectsRegistry store];
+    [store registerClass:class];
 	[self registerMethodsOfCount:1 withComment:YES toObject:class];
 	[self registerMethodsOfCount:1 withComment:NO toObject:class];
 	// execute
@@ -57,7 +59,8 @@
 	// setup
 	GBProcessor *processor = [GBProcessor processorWithSettingsProvider:[self settingsProviderKeepObjects:NO keepMembers:NO]];
 	GBClassData *class = [self classWithComment:NO];
-	GBStore *store = [GBTestObjectsRegistry storeByPerformingSelector:@selector(registerClass:) withObject:class];
+    GBStore *store = [GBTestObjectsRegistry store];
+    [store registerClass:class];
 	// execute
 	[processor processObjectsFromStore:store];
 	// verify
@@ -86,13 +89,14 @@
 	GBProcessor *processor = [GBProcessor processorWithSettingsProvider:[self settingsProviderKeepObjects:YES keepMembers:YES]];
 	GBClassData *class = [self classWithComment:YES];
 	NSArray *uncommented = [self registerMethodsOfCount:1 withComment:NO toObject:class];
-	GBStore *store = [GBTestObjectsRegistry storeByPerformingSelector:@selector(registerClass:) withObject:class];
+    GBStore *store = [GBTestObjectsRegistry store];
+    [store registerClass:class];
 	// execute
 	[processor processObjectsFromStore:store];
 	// verify
 	NSArray *methods = [class.methods methods];
  	assertThatInteger([methods count], equalToInteger(1));
-	assertThatBool([methods containsObject:[uncommented objectAtIndex:0]], equalToBool(YES));
+	assertThatBool([methods containsObject:uncommented[0]], equalToBool(YES));
 }
 
 - (void)testProcessObjectsFromStore_shouldDeleteUncommentedMethodsIfKeepMembersIsNo {
@@ -101,21 +105,23 @@
 	GBClassData *class = [self classWithComment:YES];
 	NSArray *commented = [self registerMethodsOfCount:1 withComment:YES toObject:class];
 	NSArray *uncommented = [self registerMethodsOfCount:1 withComment:NO toObject:class];
-	GBStore *store = [GBTestObjectsRegistry storeByPerformingSelector:@selector(registerClass:) withObject:class];
+    GBStore *store = [GBTestObjectsRegistry store];
+    [store registerClass:class];
 	// execute
 	[processor processObjectsFromStore:store];
 	// verify
 	NSArray *methods = [class.methods methods];
  	assertThatInteger([methods count], equalToInteger(1));
-	assertThatBool([methods containsObject:[commented objectAtIndex:0]], equalToBool(YES));
-	assertThatBool([methods containsObject:[uncommented objectAtIndex:0]], equalToBool(NO));
+	assertThatBool([methods containsObject:commented[0]], equalToBool(YES));
+	assertThatBool([methods containsObject:uncommented[0]], equalToBool(NO));
 }
 
 - (void)testProcessObjectsFromStore_shouldKeepUncommentedObjectIfAllMethodsAreUnregisteredIfKeepObjectIsYes {
 	// setup
 	GBProcessor *processor = [GBProcessor processorWithSettingsProvider:[self settingsProviderKeepObjects:YES keepMembers:NO]];
 	GBClassData *class = [self classWithComment:NO];
-	GBStore *store = [GBTestObjectsRegistry storeByPerformingSelector:@selector(registerClass:) withObject:class];
+    GBStore *store = [GBTestObjectsRegistry store];
+    [store registerClass:class];
 	[self registerMethodsOfCount:1 withComment:NO toObject:class];
 	// execute
 	[processor processObjectsFromStore:store];
@@ -127,7 +133,8 @@
 	// setup
 	GBProcessor *processor = [GBProcessor processorWithSettingsProvider:[self settingsProviderKeepObjects:NO keepMembers:NO]];
 	GBClassData *class = [self classWithComment:NO];
-	GBStore *store = [GBTestObjectsRegistry storeByPerformingSelector:@selector(registerClass:) withObject:class];
+    GBStore *store = [GBTestObjectsRegistry store];
+    [store registerClass:class];
 	[self registerMethodsOfCount:1 withComment:NO toObject:class];
 	// execute
 	[processor processObjectsFromStore:store];

@@ -6,9 +6,8 @@
 //  Copyright (c) 2010 __MyCompanyName__. All rights reserved.
 //
 
-#import "RegexKitLite.h"
-#import "GRMustache.h"
-#import "GBDictionaryTemplateLoader.h"
+#import <RegexKitLite/RegexKitLite.h>
+#import <GRMustache/GRMustache.h>
 #import "GBTemplateHandler.h"
 
 static NSString *kGBSectionKey = @"section";
@@ -32,7 +31,7 @@ static NSString *kGBValueKey = @"value";
 #pragma mark Initialization & disposal
 
 + (id)handler {
-	return [[[self alloc] init] autorelease];
+	return [[self alloc] init];
 }
 
 - (NSString*)templateString{
@@ -73,17 +72,17 @@ static NSString *kGBValueKey = @"value";
 
 		// If section data is valid, use it.
 		if ([self validateSectionData:sectionData withTemplate:template]) {
-			NSString *name = [sectionData objectForKey:kGBNameKey];
-			NSString *value = [[sectionData objectForKey:kGBValueKey] stringByTrimmingWhitespaceAndNewLine];
-			[_templateSections setObject:value forKey:name];
+			NSString *name = sectionData[kGBNameKey];
+			NSString *value = [sectionData[kGBValueKey] stringByTrimmingWhitespaceAndNewLine];
+			_templateSections[name] = value;
 		}
 		
 		// If the section is valid, log it.
 		NSUInteger line = [self lineOfSectionData:sectionData withinTemplate:template];
-		GBLogDebug(@"Found section template %@ at line %ld...", [sectionData objectForKey:kGBNameKey], line);
+		GBLogDebug(@"Found section template %@ at line %ld...", sectionData[kGBNameKey], line);
 
 		// Get the range of the regex within the clean string and remove the substring from it.
-		NSString *section = [sectionData objectForKey:kGBSectionKey];
+		NSString *section = sectionData[kGBSectionKey];
 		NSRange range = [clean rangeOfString:section];
 		NSString *prefix = [[clean substringToIndex:range.location] stringByTrimmingWhitespaceAndNewLine];
 		NSString *suffix = [[clean substringFromIndex:range.location + range.length] stringByTrimmingWhitespaceAndNewLine];
@@ -98,8 +97,9 @@ static NSString *kGBValueKey = @"value";
 	
 	// Prepare template that will be used for rendering output.
 	if ([_templateString length] != 0) {
-		GBDictionaryTemplateLoader *loader = [GBDictionaryTemplateLoader loaderWithDictionary:_templateSections];
-		_template = [loader parseString:_templateString error:error];
+        GRMustacheTemplateRepository* loader = [GRMustacheTemplateRepository templateRepositoryWithDictionary:_templateSections];
+        _template = [loader templateFromString:_templateString error:error];
+        _template.baseContext = [_template.baseContext contextWithUnsafeKeyAccess];
 		return (_template != nil);
 	}
 	return YES;
@@ -113,20 +113,25 @@ static NSString *kGBValueKey = @"value";
 		GBLogWarn(@"No template loaded or parsed, ignoring redering!");
 		return @"";
 	}
-	return [_template renderObject:object];
+    NSError* error = nil;
+    NSString* rendering = [_template renderObject:object error:&error];
+    if (error) {
+        GBLogWarn(@"Error occurred when rendering template: %@", [error localizedDescription]);
+    }
+    return rendering;
 }
 
 #pragma mark Helper methods
 
 - (BOOL)validateSectionData:(NSDictionary *)data withTemplate:(NSString *)template {
-	NSString *name = [data objectForKey:kGBNameKey];
+	NSString *name = data[kGBNameKey];
 	if ([name length] == 0) {
 		NSUInteger line = [self lineOfSectionData:data withinTemplate:template];
 		GBLogWarn(@"Unnamed section found at line %ld, ignoring!", line);
 		return NO;
 	}
 
-	NSString *value = [[data objectForKey:kGBValueKey] stringByTrimmingWhitespace];
+	NSString *value = [data[kGBValueKey] stringByTrimmingWhitespace];
 	if ([value length] == 0) {
 		NSUInteger line = [self lineOfSectionData:data withinTemplate:template];
 		GBLogWarn(@"Empty section %@ found at line %ld, ignoring!", name, line);
@@ -137,7 +142,7 @@ static NSString *kGBValueKey = @"value";
 }
 
 - (NSUInteger)lineOfSectionData:(NSDictionary *)data withinTemplate:(NSString *)template {
-	NSString *section = [data objectForKey:kGBSectionKey];
+	NSString *section = data[kGBSectionKey];
 	NSRange range = [template rangeOfString:section];
 	return [template numberOfLinesInRange:NSMakeRange(0, range.location)];
 }

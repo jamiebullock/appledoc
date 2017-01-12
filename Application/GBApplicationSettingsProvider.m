@@ -9,10 +9,12 @@
 #include "mkdio.h"
 #import <objc/runtime.h>
 #import <Cocoa/Cocoa.h>
-#import "RegexKitLite.h"
+#import <RegexKitLite/RegexKitLite.h>
 #import "GBDataObjects.h"
 #import "GBApplicationSettingsProvider.h"
 #import "GBLog.h"
+
+#import "SynthesizeSingleton.h"
 
 NSString *kGBTemplatePlaceholderCompanyID = @"%COMPANYID";
 NSString *kGBTemplatePlaceholderProjectID = @"%PROJECTID";
@@ -82,8 +84,9 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 - (NSString *)htmlReferenceForTopLevelObject:(GBModelBase *)object fromTopLevelObject:(GBModelBase *)source;
 - (NSString *)htmlReferenceForMember:(id)member prefixedWith:(id)prefix;
 - (NSString *)outputPathForObject:(id)object withExtension:(NSString *)extension;
-- (NSString *)stringByReplacingOccurencesOfRegex:(NSString *)regex inHTML:(NSString *)string usingBlock:(NSString *(^)(NSInteger captureCount, NSString **capturedStrings, BOOL insideCode))block;
+- (NSString *)stringByReplacingOccurencesOfRegex:(NSString *)regex inHTML:(NSString *)string usingBlock:(NSString *(^)(NSInteger captureCount, NSString * __unsafe_unretained *capturedStrings, BOOL insideCode))block;
 - (NSString *)stringByNormalizingString:(NSString *)string;
+- (NSString *)sanitizeFileNameString:(NSString *)fileName;
 @property (readonly) NSDateFormatter *yearDateFormatter;
 @property (readonly) NSDateFormatter *yearToDayDateFormatter;
 
@@ -93,6 +96,8 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 
 @implementation GBApplicationSettingsProvider
 
+SYNTHESIZE_SINGLETON_FOR_CLASS(GBApplicationSettingsProvider, sharedApplicationSettingsProvider);
+
 #pragma mark Initialization & disposal
 
 + (NSSet *)nonCopyableProperties {
@@ -100,7 +105,7 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 }
 
 + (id)provider {
-	return [[[self alloc] init] autorelease];
+	return [[self alloc] init];
 }
 
 - (id)init {
@@ -140,6 +145,7 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 		self.findUndocumentedMembersDocumentation = YES;
 		self.treatDocSetIndexingErrorsAsFatals = NO;
 		self.exitCodeThreshold = 0;
+        self.docsSectionTitle = nil;
 		
 		self.mergeCategoriesToClasses = YES;
 		self.mergeCategoryCommentToClass = YES;
@@ -159,6 +165,7 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 		self.warnOnUnknownDirective = YES;
 		self.warnOnInvalidCrossReference = YES;
 		self.warnOnMissingMethodArgument = YES;
+        self.warnOnUnsupportedTypedefEnum = YES;
 		
 		self.docsetBundleIdentifier = [NSString stringWithFormat:@"%@.%@", kGBTemplatePlaceholderCompanyID, kGBTemplatePlaceholderProjectID];
 		self.docsetBundleName = [NSString stringWithFormat:@"%@ Documentation", kGBTemplatePlaceholderProject];
@@ -255,12 +262,12 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 	// We should properly handle cross references: if outside example block, simply strip prexif/suffix markers, otherwise extract description from Markdown style scross reference (i.e. [description](the rest)) and only use that part.
 	if (self.embedCrossReferencesWhenProcessingMarkdown) {
 		NSString *regex = [self stringByEmbeddingCrossReference:@"(.+?)"];
-		result = [self stringByReplacingOccurencesOfRegex:regex inHTML:result usingBlock:^NSString *(NSInteger captureCount, NSString **capturedStrings, BOOL insideCode) {
+		result = [self stringByReplacingOccurencesOfRegex:regex inHTML:result usingBlock:^NSString *(NSInteger captureCount, NSString * __unsafe_unretained *capturedStrings, BOOL insideCode) {
 			NSString *linkText = capturedStrings[1];
 			if (!insideCode) return linkText;
 			NSArray *components = [linkText captureComponentsMatchedByRegex:self.commentComponents.markdownInlineLinkRegex];
 			if ([components count] < 1) return linkText;
-			return [components objectAtIndex:1];
+			return components[1];
 		}];
 	}
 
@@ -281,30 +288,30 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 	NSString *result = markdown;
 	
 	// Clean Markdown inline links. Note that we need to additionally handle remote member links [[class method]](address), these are not detected by our standard regex, but using common regex for these cases would incorrectly handle multiple links in the same string (it would greedily match the whole content between the first and the last link as the description). Note that the order of processing is important - we first need to handle "simple" links and then continue with remote members.
-	result = [result stringByReplacingOccurrencesOfRegex:self.commentComponents.markdownInlineLinkRegex usingBlock:^NSString *(NSInteger captureCount, NSString *const *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
+	result = [result stringByReplacingOccurrencesOfRegex:self.commentComponents.markdownInlineLinkRegex usingBlock:^NSString *(NSInteger captureCount, NSString *const __unsafe_unretained *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
 		return capturedStrings[1];
 	}];
-	result = [result stringByReplacingOccurrencesOfRegex:@"\\[(.+)\\]\\(([^\\s]+)(?:\\s*\"([^\"]+)\")?\\)" usingBlock:^NSString *(NSInteger captureCount, NSString *const *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
+	result = [result stringByReplacingOccurrencesOfRegex:@"\\[(.+)\\]\\(([^\\s]+)(?:\\s*\"([^\"]+)\")?\\)" usingBlock:^NSString *(NSInteger captureCount, NSString *const __unsafe_unretained *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
 		return capturedStrings[1];
 	}];
 	
 	// Clean formatting directives. Couldn't find single regex matcher for cleaning up all cases, so ended up in doing several phases and finally repeating the last one for any remaining cases... This makes unit tests pass...
-	result = [result stringByReplacingOccurrencesOfRegex:@"(\\*\\*\\*|___|\\*\\*_|_\\*\\*|\\*__|__\\*)(.+?)\\1" usingBlock:^NSString *(NSInteger captureCount, NSString *const *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
+	result = [result stringByReplacingOccurrencesOfRegex:@"(\\*\\*\\*|___|\\*\\*_|_\\*\\*|\\*__|__\\*)(.+?)\\1" usingBlock:^NSString *(NSInteger captureCount, NSString *const __unsafe_unretained *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
 		return capturedStrings[2];
 	}];
-	result = [result stringByReplacingOccurrencesOfRegex:@"(\\*\\*|__|\\*_|_\\*)(.+?)\\1" usingBlock:^NSString *(NSInteger captureCount, NSString *const *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
+	result = [result stringByReplacingOccurrencesOfRegex:@"(\\*\\*|__|\\*_|_\\*)(.+?)\\1" usingBlock:^NSString *(NSInteger captureCount, NSString *const __unsafe_unretained *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
 		return capturedStrings[2];
 	}];
-	result = [result stringByReplacingOccurrencesOfRegex:@"([*_`])(.+?)\\1" usingBlock:^NSString *(NSInteger captureCount, NSString *const *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
+	result = [result stringByReplacingOccurrencesOfRegex:@"([*_`])(.+?)\\1" usingBlock:^NSString *(NSInteger captureCount, NSString *const __unsafe_unretained *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
 		return capturedStrings[2];
 	}];
-	result = [result stringByReplacingOccurrencesOfRegex:@"([*_`])(.+?)\\1" usingBlock:^NSString *(NSInteger captureCount, NSString *const *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
+	result = [result stringByReplacingOccurrencesOfRegex:@"([*_`])(.+?)\\1" usingBlock:^NSString *(NSInteger captureCount, NSString *const __unsafe_unretained *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
 		return capturedStrings[2];
 	}];
 	
 	// Convert hard coded HTML anchor links as these may cause problems with docsetutil. Basically we get address and description and output only description if found. Otherwise we use address.
 	NSString *anchorRegex = @"<a\\s+href\\s*=\\s*([\"'])([^\\1]*)[\"']\\s*(?:(?:>([^>]*)</a>)|(?:/>))";
-	result = [result stringByReplacingOccurrencesOfRegex:anchorRegex usingBlock:^NSString *(NSInteger captureCount, NSString *const *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
+	result = [result stringByReplacingOccurrencesOfRegex:anchorRegex usingBlock:^NSString *(NSInteger captureCount, NSString *const __unsafe_unretained *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
 		if (captureCount < 2) return capturedStrings[0];
 		if (captureCount < 3) return capturedStrings[2];
 		NSString *description = capturedStrings[3];
@@ -335,10 +342,10 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 	return result;
 }
 
-- (NSString *)stringByReplacingOccurencesOfRegex:(NSString *)regex inHTML:(NSString *)string usingBlock:(NSString *(^)(NSInteger captureCount, NSString **capturedStrings, BOOL insideCode))block {	
+- (NSString *)stringByReplacingOccurencesOfRegex:(NSString *)regex inHTML:(NSString *)string usingBlock:(NSString *(^)(NSInteger captureCount, NSString * __unsafe_unretained *capturedStrings, BOOL insideCode))block {
 	NSString *theRegex = [NSString stringWithFormat:@"<code>|</code>|%@", regex];
 	__block BOOL insideExampleBlock = NO;
-	return [string stringByReplacingOccurrencesOfRegex:theRegex usingBlock:^NSString *(NSInteger captureCount, NSString *const *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
+	return [string stringByReplacingOccurrencesOfRegex:theRegex usingBlock:^NSString *(NSInteger captureCount, NSString *const __unsafe_unretained *capturedStrings, const NSRange *capturedRanges, volatile BOOL *const stop) {
 		// Change flag when inside example block - we need to handle strings differently there!
 		NSString *matchedText = capturedStrings[0];
 		if ([matchedText isEqualToString:@"<code>"]) {
@@ -350,7 +357,7 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 		}
 		
 		// Invoke parent block when matched the given regex
-		NSString **strings = (NSString **)capturedStrings;
+		NSString * __unsafe_unretained *strings = (NSString **)capturedStrings;
 		return block(captureCount, strings, insideExampleBlock);
 	}];
 }
@@ -447,13 +454,13 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 
 - (BOOL)isPathRepresentingTemplateFile:(NSString *)path {
 	NSString *filename = [[path lastPathComponent] stringByDeletingPathExtension];
-	if ([filename hasSuffix:@"-template"]) return YES;
-	return NO;
+	return [filename hasSuffix:@"-template"];
 }
 
 - (NSString *)outputFilenameForTemplatePath:(NSString *)path {
 	NSString *result = [path lastPathComponent];
-	return [result stringByReplacingOccurrencesOfString:@"-template" withString:@""];
+    result = [result stringByReplacingOccurrencesOfString:@"-template" withString:@""];
+    return [self sanitizeFileNameString:result];
 }
 
 - (NSString *)templateFilenameForOutputPath:(NSString *)path {
@@ -521,6 +528,10 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 		basePath = @"Constants";
 		name = [object nameOfEnum];
 	}
+    else if ([object isKindOfClass:[GBTypedefBlockData class]]) {
+        basePath = @"Blocks";
+        name = [object nameOfBlock];
+    }
 	else if ([object isKindOfClass:[GBDocumentData class]]) {
 		GBDocumentData *document = object;
 		
@@ -571,9 +582,7 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 #pragma mark Helper methods
 
 - (BOOL)isTopLevelStoreObject:(id)object {
-	if ([object isKindOfClass:[GBClassData class]] || [object isKindOfClass:[GBCategoryData class]] || [object isKindOfClass:[GBProtocolData class]])
-		return YES;
-	return NO;
+	return [object isKindOfClass:[GBClassData class]] || [object isKindOfClass:[GBCategoryData class]] || [object isKindOfClass:[GBProtocolData class]];
 }
 
 - (NSString *)stringByReplacingOccurencesOfPlaceholdersInString:(NSString *)string {
@@ -594,6 +603,15 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 
 - (NSString *)stringByNormalizingString:(NSString *)string {
 	return [string stringByReplacingOccurrencesOfRegex:@"[ \t]+" withString:@"-"];
+}
+
+- (NSString *)sanitizeFileNameString:(NSString *)fileName {
+    NSString *rawFileName = fileName;
+    NSCharacterSet* illegalFileNameCharacters = [NSCharacterSet characterSetWithCharactersInString:@"/\\?%*|\"<>"];
+    rawFileName = [[rawFileName componentsSeparatedByCharactersInSet:illegalFileNameCharacters] componentsJoinedByString:@""];
+    rawFileName = [[rawFileName componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] componentsJoinedByString:@"-"];
+    
+    return rawFileName;
 }
 
 #pragma mark Overriden methods
@@ -693,6 +711,7 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 @synthesize cleanupOutputPathBeforeRunning;
 @synthesize treatDocSetIndexingErrorsAsFatals;
 @synthesize exitCodeThreshold;
+@synthesize docsSectionTitle;
 
 @synthesize warnOnMissingOutputPathArgument;
 @synthesize warnOnMissingCompanyIdentifier;
@@ -702,6 +721,7 @@ NSString *NSStringFromGBPublishedFeedFormats(GBPublishedFeedFormats formats) {
 @synthesize warnOnUnknownDirective;
 @synthesize warnOnInvalidCrossReference;
 @synthesize warnOnMissingMethodArgument;
+@synthesize warnOnUnsupportedTypedefEnum;
 
 @synthesize commentComponents;
 @synthesize stringTemplates;

@@ -23,6 +23,7 @@
 -(void) dealloc
 {
 	[self closeZipFile];
+    [super dealloc];
 }
 
 #pragma mark - unzipping 
@@ -114,7 +115,7 @@
 			[fman createDirectoryAtPath:[fullPath stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
         
         //test
-        DDZippedFileInfo *info = [[DDZippedFileInfo alloc] initWithName:strPath andNativeInfo:fileInfo];
+        DDZippedFileInfo *info = [[[DDZippedFileInfo alloc] initWithName:strPath andNativeInfo:fileInfo] autorelease];
         NSLog(@"%@", info.date);
         
               //ask delegate for overwrite
@@ -153,7 +154,7 @@
 			{
 				NSDate* orgDate = [DDZippedFileInfo dateWithMUDate:fileInfo.tmu_date];
 
-				NSDictionary* attr = [NSDictionary dictionaryWithObject:orgDate forKey:NSFileModificationDate]; //[[NSFileManager defaultManager] fileAttributesAtPath:fullPath traverseLink:YES];
+				NSDictionary* attr = @{NSFileModificationDate : orgDate}; //[[NSFileManager defaultManager] fileAttributesAtPath:fullPath traverseLink:YES];
 				if( attr )
 				{
 				//	[attr  setValue:orgDate forKey:NSFileCreationDate];
@@ -204,7 +205,7 @@
 -(BOOL) shouldOverwrite:(NSString*)file withName:(NSString*)name andFileInfo:(unz_file_info)fileInfo
 {
 	if( _delegate && [_delegate respondsToSelector:@selector(zipArchive:shouldOverwriteFile:withZippedFile:)] ) {
-        DDZippedFileInfo *info = [[DDZippedFileInfo alloc] initWithName:name andNativeInfo:fileInfo];    
+        DDZippedFileInfo *info = [[[DDZippedFileInfo alloc] initWithName:name andNativeInfo:fileInfo] autorelease];
 		return [_delegate zipArchive:self shouldOverwriteFile:file withZippedFile:info];
     }
 	return NO;

@@ -6,7 +6,7 @@
 //  Copyright (C) 2010, Gentle Bytes. All rights reserved.
 //
 
-#import "RegexKitLite.h"
+#import <RegexKitLite/RegexKitLite.h>
 #import "ParseKit.h"
 #import "PKToken+GBToken.h"
 #import "GBTokenizer.h"
@@ -19,9 +19,9 @@
 
 - (PKTokenizer *)tokenizerWithInputString:(NSString *)input;
 - (void)updateLastComment:(GBComment **)comment sectionComment:(GBComment **)sectionComment sectionName:(NSString **)sectionName;
-@property (retain) GBTokenizer *tokenizer;
-@property (retain) GBStore *store;
-@property (retain) GBApplicationSettingsProvider *settings;
+@property (strong) GBTokenizer *tokenizer;
+@property (strong) GBStore *store;
+@property (strong) GBApplicationSettingsProvider *settings;
 @property (assign) BOOL includeInOutput;
 @property (assign) BOOL propertyAfterPragma;
 
@@ -36,7 +36,7 @@
 - (void)matchSuperclassForClass:(GBClassData *)class;
 - (void)matchAdoptedProtocolForProvider:(GBAdoptedProtocolsProvider *)provider;
 - (void)matchIvarsForProvider:(GBIvarsProvider *)provider;
-- (void)matchMethodDefinitionsForProvider:(GBMethodsProvider *)provider defaultsRequired:(BOOL)required;
+- (void)matchMethodDefinitionsForProvider:(GBMethodsProvider *)provider forClass: (GBClassData *) class defaultsRequired:(BOOL)required;
 - (BOOL)matchMethodDefinitionForProvider:(GBMethodsProvider *)provider required:(BOOL)required;
 - (BOOL)matchPropertyDefinitionForProvider:(GBMethodsProvider *)provider required:(BOOL)required;
 
@@ -58,8 +58,9 @@
 - (BOOL)matchObjectDefinition;
 - (BOOL)matchObjectDeclaration;
 - (BOOL)matchTypedefEnumDefinition;
+- (BOOL)matchTypedefBlockDefinitionForProvider;
 - (BOOL)matchMethodDataForProvider:(GBMethodsProvider *)provider from:(NSString *)start to:(NSString *)end required:(BOOL)required;
-- (void)registerComment:(GBComment *)comment toObject:(GBModelBase *)object;
+- (void)registerComment:(GBComment *)comment toObject:(GBModelBase *)object startingWith:(PKToken *)startToken;
 - (void)registerLastCommentToObject:(GBModelBase *)object;
 - (void)registerSourceInfoFromCurrentTokenToObject:(GBModelBase *)object;
 - (NSString *)sectionNameFromComment:(GBComment *)comment;
@@ -73,7 +74,7 @@
 #pragma mark ￼Initialization & disposal
 
 + (id)parserWithSettingsProvider:(id)settingsProvider {
-	return [[[self alloc] initWithSettingsProvider:settingsProvider] autorelease];
+	return [[self alloc] initWithSettingsProvider:settingsProvider];
 }
 
 - (id)initWithSettingsProvider:(id)settingsProvider {
@@ -162,11 +163,11 @@
 	[self matchSuperclassForClass:class];
 	[self matchAdoptedProtocolForProvider:class.adoptedProtocols];
 	[self matchIvarsForProvider:class.ivars];
-
+    
     GBMethodsProvider *methodsProvider = class.methods;
     methodsProvider.useAlphabeticalOrder = !self.settings.useCodeOrder;
 
-	[self matchMethodDefinitionsForProvider:methodsProvider defaultsRequired:NO];
+    [self matchMethodDefinitionsForProvider:methodsProvider forClass: class defaultsRequired:NO];
 	[self.store registerClass:class];
 }
 
@@ -185,7 +186,7 @@
     GBMethodsProvider *methodsProvider = category.methods;
     methodsProvider.useAlphabeticalOrder = !self.settings.useCodeOrder;
 
-	[self matchMethodDefinitionsForProvider:methodsProvider defaultsRequired:NO];
+    [self matchMethodDefinitionsForProvider:methodsProvider forClass: nil defaultsRequired:NO];
 	[self.store registerCategory:category];
 }
 
@@ -203,7 +204,7 @@
     GBMethodsProvider *methodsProvider = extension.methods;
     methodsProvider.useAlphabeticalOrder = !self.settings.useCodeOrder;
 
-	[self matchMethodDefinitionsForProvider:methodsProvider defaultsRequired:NO];
+	[self matchMethodDefinitionsForProvider:methodsProvider forClass: nil defaultsRequired:NO];
 	[self.store registerCategory:extension];
 }
 
@@ -221,7 +222,7 @@
     GBMethodsProvider *methodsProvider = protocol.methods;
     methodsProvider.useAlphabeticalOrder = !self.settings.useCodeOrder;
 
-	[self matchMethodDefinitionsForProvider:methodsProvider defaultsRequired:YES];
+	[self matchMethodDefinitionsForProvider:methodsProvider forClass: nil defaultsRequired:YES];
 	[self.store registerProtocol:protocol];
 }
 
@@ -247,7 +248,7 @@
 	}];
 }
 
-- (void)matchMethodDefinitionsForProvider:(GBMethodsProvider *)provider defaultsRequired:(BOOL)required {
+- (void)matchMethodDefinitionsForProvider:(GBMethodsProvider *)provider forClass: (GBClassData *) class defaultsRequired:(BOOL)required {
 	__block BOOL isRequired = required;
 	[self.tokenizer consumeTo:@"@end" usingBlock:^(PKToken *token, BOOL *consume, BOOL *stop) {
 		if ([token matches:@"@required"]) {
@@ -258,6 +259,8 @@
 			*consume = NO;
 		} else if ([self matchPropertyDefinitionForProvider:provider required:isRequired]) {
 			*consume = NO;
+        } else if ([self matchTypedefBlockDefinitionForProvider]) {
+            *consume = NO;
 		}
 	}];
 }
@@ -275,10 +278,11 @@
 	__block BOOL firstToken = YES;
 	__block BOOL result = NO;
 	__block GBSourceInfo *filedata = nil;
-	[self updateLastComment:&comment sectionComment:&sectionComment sectionName:&sectionName];
+	__block PKToken *startToken = [self.tokenizer currentToken];
 	[self.tokenizer consumeFrom:@"@property" to:@";" usingBlock:^(PKToken *token, BOOL *consume, BOOL *stop) {
 		if (!filedata) filedata = [self.tokenizer sourceInfoForToken:token];
 		if (firstToken) {
+			[self updateLastComment:&comment sectionComment:&sectionComment sectionName:&sectionName];
 			if (!self.propertyAfterPragma) [self.tokenizer resetComments];
 			self.propertyAfterPragma = NO;
 			firstToken = NO;
@@ -315,7 +319,7 @@
 		GBMethodData *propertyData = [GBMethodData propertyDataWithAttributes:propertyAttributes components:propertyComponents];
 		[propertyData registerSourceInfo:filedata];
 		GBLogDebug(@"Matched property definition %@ at line %lu.", propertyData, propertyData.prefferedSourceInfo.lineNumber);
-		[self registerComment:comment toObject:propertyData];
+		[self registerComment:comment toObject:propertyData startingWith:startToken];
 		[propertyData setIsRequired:required];
 		[provider registerSectionIfNameIsValid:sectionName];
 		[provider registerMethod:propertyData];
@@ -415,9 +419,150 @@
 - (BOOL)matchNextObject {
 	if ([self matchObjectDefinition]) return YES;
 	if ([self matchObjectDeclaration]) return YES;
+    if ([self matchTypedefBlockDefinitionForProvider]) return YES;
     if ([self matchTypedefEnumDefinition]) return YES;
 	return NO;
 }
+
+- (BOOL)matchTypedefBlockDefinitionForProvider {
+    
+    if (![[self.tokenizer currentToken] matches:@"typedef"]) {
+        return NO;
+    }
+    
+    __block BOOL isTypeDefBlock = YES;
+    __block NSString *returnType = nil;
+    __block PKToken *lastToken = nil;
+    NSUInteger currentLine = [[self.tokenizer sourceInfoForCurrentToken] lineNumber];
+    [self.tokenizer lookaheadTo:@"^" usingBlock:^(PKToken *token, BOOL *stop) {
+
+        // break and cancel everything if new line token found before block token could be find
+        if ([[self.tokenizer sourceInfoForToken: token] lineNumber] != currentLine) {
+            isTypeDefBlock = NO;
+            *stop = YES;
+            return;
+        }
+        
+        if (returnType == nil) {
+            
+            if (![token matches: @"typedef"]) {
+                returnType = [token stringValue];
+            }
+            
+        } else {
+            if ([token matches: @"*"]) {
+                returnType = [returnType stringByAppendingString: [token stringValue]];
+                
+            } else if ([token matches: @"("]) {
+                // can be ignored, we seem to be at the end
+                
+            } else {
+                // typedef started with two return type tokens -> cannot be -> cancel!
+                isTypeDefBlock = NO;
+                *stop = YES;
+                return;
+            }
+
+        }
+        lastToken = token;
+    }];
+    
+    // last token must have been a "("
+    if (isTypeDefBlock && ![lastToken matches: @"("]) {
+        return NO;
+    }
+    
+    if (isTypeDefBlock)
+    {
+        
+        [self.tokenizer consumeTo: @"^" usingBlock: nil];
+        NSString *blockName = [[self.tokenizer currentToken] stringValue];
+        
+        GBSourceInfo *startInfo = [tokenizer sourceInfoForCurrentToken];
+        GBComment *lastComment = [tokenizer lastComment];
+        GBLogVerbose(@"Matched %@ typedef block definition at line %lu.", blockName, startInfo.lineNumber);
+
+        [self.tokenizer consume:2];
+        
+        NSMutableArray *values = nil;
+        
+        if (![[self.tokenizer lookahead: 2] matches: @"void"]) {
+            values = [NSMutableArray array];
+            [self.tokenizer consumeFrom:@"(" to:@")" usingBlock:^(PKToken *token, BOOL *consume, BOOL *stop)
+             {
+                 NSString *className = [[self.tokenizer currentToken] stringValue];
+                 [self.tokenizer consume: 1];
+                 
+                 NSMutableString *argName = [NSMutableString string];
+                 while([[self.tokenizer currentToken] matches:@"*"])
+                 {
+                     [argName appendString: [[self.tokenizer currentToken] stringValue]];
+                     [tokenizer consume:1];
+                 }
+               
+                 while([[self.tokenizer currentToken] matches:@"__nonnull"])
+                 {
+                   [argName appendString: [[self.tokenizer currentToken] stringValue]];
+                   [argName appendString:@" "];
+                   [tokenizer consume:1];
+                 }
+
+                while([[self.tokenizer currentToken] matches:@"__nullable"])
+                 {
+                   [argName appendString: [[self.tokenizer currentToken] stringValue]];
+                   [argName appendString:@" "];
+                   [tokenizer consume:1];
+                 }
+
+                 while([[self.tokenizer currentToken] matches:@"__null_unspecified"])
+                 {
+                   [argName appendString: [[self.tokenizer currentToken] stringValue]];
+                   [argName appendString:@" "];                   
+                   [tokenizer consume:1];
+                 }
+               
+                 NSString *tokenString = [[self.tokenizer currentToken] stringValue];
+                 if (![tokenString isEqualToString:@")"] && ![tokenString isEqualToString:@","])
+                 {
+                     if (tokenString)
+                     {
+                         [argName appendString:tokenString];
+                     }
+                     
+                     [self.tokenizer consume:1];
+                 }
+                 
+                 if([[self.tokenizer currentToken] matches:@","])
+                 {
+                     [tokenizer consume:1];
+                 }
+                 
+                 GBTypedefBlockArgument *newArg = [GBTypedefBlockArgument typedefBlockArgumentWithName: argName className: className];
+                 
+                 [values addObject: newArg];
+                 
+                 *consume = NO;
+             }];
+        }
+        
+        GBTypedefBlockData *newBlock = [GBTypedefBlockData typedefBlockWithName: blockName returnType: returnType parameters: values];
+        newBlock.includeInOutput = self.includeInOutput;
+
+        [newBlock registerSourceInfo:startInfo];
+        [self registerComment:lastComment toObject:newBlock startingWith:nil];
+        [self.tokenizer resetComments];
+
+        //consume ;
+        [self.tokenizer consume:1];
+
+        [self.store registerTypedefBlock: newBlock];
+        
+        return YES;
+
+    }
+    return NO;
+}
+
 
 - (BOOL)matchTypedefEnumDefinition {
     BOOL isTypeDef = [[self.tokenizer currentToken] matches:@"typedef"];
@@ -433,6 +578,7 @@
     
     if((isTypeDefEnum || isTypeDefOptions) && hasOpenBracket)
     {
+        __block PKToken *startToken = [self.tokenizer currentToken];
         [self.tokenizer consume:3];  //consume 'typedef' 'NS_ENUM' and '('
         
         //get the enum type
@@ -459,20 +605,24 @@
         newEnum.isOptions = isTypeDefOptions;
         
         [newEnum registerSourceInfo:startInfo];
-        [self registerComment:lastComment toObject:newEnum];
+        [self registerComment:lastComment toObject:newEnum startingWith:startToken];
         [self.tokenizer resetComments];
         
         
         //[self.tokenizer consume:1];
+        startToken = [self.tokenizer currentToken];
         [self.tokenizer consumeFrom:@"{" to:@"}" usingBlock:^(PKToken *token, BOOL *consume, BOOL *stop)
          {
              /* ALWAYS start with the name of the Constant */
               
+             startToken = token;
              GBEnumConstantData *newConstant = [GBEnumConstantData constantWithName:[token stringValue]];
              GBSourceInfo *filedata = [tokenizer sourceInfoForToken:token];
              [newConstant registerSourceInfo:filedata];
              [newConstant setParentObject:newEnum];
-             [self registerLastCommentToObject:newConstant];
+
+             GBComment *comment = [self.tokenizer lastComment];
+
              [self.tokenizer consume:1];
              [self.tokenizer resetComments];
              
@@ -502,6 +652,9 @@
              {
                  [tokenizer consume:1];
              }
+
+             [self registerComment:comment toObject:newConstant startingWith:startToken];
+             startToken = [self.tokenizer currentToken];
              
              *consume = NO;
              
@@ -521,7 +674,7 @@
         BOOL isRegularEnum = [[self.tokenizer lookahead:1] matches:@"enum"];
         BOOL isCurlyBrace = [[self.tokenizer lookahead:2] matches:@"{"];
         
-        if(isRegularEnum && isCurlyBrace)
+        if(isRegularEnum && isCurlyBrace && self.settings.warnOnUnsupportedTypedefEnum)
         {
             GBSourceInfo *startInfo = [tokenizer sourceInfoForCurrentToken];
             GBLogXWarn(startInfo, @"unsupported typedef enum at %@!", startInfo);
@@ -624,6 +777,7 @@
 	__block GBSourceInfo *filedata = nil;
 	__block GBMethodType methodType = [start isEqualToString:@"-"] ? GBMethodTypeInstance : GBMethodTypeClass;
 	[self updateLastComment:&comment sectionComment:&sectionComment sectionName:&sectionName];
+	__block PKToken *startToken = [self.tokenizer currentToken];
 	[self.tokenizer consumeFrom:start to:end usingBlock:^(PKToken *token, BOOL *consume, BOOL *stop) {
 		// In order to provide at least some assurance the minus or plus actually starts the method, we validate next token is opening parenthesis. Very simple so might need some refinement... Note that we skip subsequent - or + tokens so that we can handle stuff like '#pragma mark -' gracefully (note that we also do it for + although that shouldn't be necessary, but feels safer).
 		if (assertMethod) {
@@ -662,7 +816,7 @@
 		// Get all arguments. Note that we ignore semicolons which may "happen" in declaration before method opening brace!
 		__block BOOL parseAttribute = NO;
 		__block NSUInteger parenthesisDepth = 0;
-		__block NSMutableArray *methodArgs = [NSMutableArray array];
+		NSMutableArray *methodArgs = [NSMutableArray array];
 		[self.tokenizer consumeTo:end usingBlock:^(PKToken *token, BOOL *consume, BOOL *stop) {
 			if ([token matches:@"__attribute__"] || [token matches:@"DEPRECATED_ATTRIBUTE"]) {
 				parseAttribute = YES;
@@ -690,7 +844,7 @@
 			[self.tokenizer consume:1];
 			
 			__block NSString *argumentVar = nil;
-			__block NSMutableArray *argumentTypes = [NSMutableArray array];
+			NSMutableArray *argumentTypes = [NSMutableArray array];
 			__block NSMutableArray *terminationMacros = [NSMutableArray array];
             __block BOOL variableArg = NO;
 			if ([[self.tokenizer currentToken] matches:@":"]) {
@@ -752,7 +906,7 @@
 		GBMethodData *methodData = [GBMethodData methodDataWithType:methodType result:methodResult arguments:methodArgs];
 		[methodData registerSourceInfo:filedata];		
 		GBLogDebug(@"Matched method %@%@ at line %lu.", start, methodData, methodData.prefferedSourceInfo.lineNumber);
-		[self registerComment:comment toObject:methodData];
+		[self registerComment:comment toObject:methodData startingWith:startToken];
 		[methodData setIsRequired:required];
 		[provider registerSectionIfNameIsValid:sectionName];
 		[provider registerMethod:methodData];
@@ -764,12 +918,28 @@
 }
 
 - (void)registerLastCommentToObject:(GBModelBase *)object {
-	[self registerComment:[self.tokenizer lastComment] toObject:object];
+	[self registerComment:[self.tokenizer lastComment] toObject:object startingWith:nil];
 	[self.tokenizer resetComments];
 }
 
-- (void)registerComment:(GBComment *)comment toObject:(GBModelBase *)object {
+- (void)registerComment:(GBComment *)comment toObject:(GBModelBase *)object startingWith:(PKToken *)startToken {
+	if (startToken) {
+		GBComment *postfixComment = [self.tokenizer postfixCommentFrom:startToken];
+		if (comment && postfixComment) {
+			GBLogInfo(@"Ignored postfix comment '%@' from '%@' in favour of '%@'",
+			          [postfixComment.stringValue normalizedDescription],
+			          object,
+			          [comment.stringValue normalizedDescription]);
+		}
+		if (!comment && postfixComment) {
+			GBLogDebug(@"Using postfix comment '%@' for '%@'",
+			          [postfixComment.stringValue normalizedDescription],
+			          object);
+			comment = postfixComment;
+		}
+	}
 	[object setComment:comment];
+
 	if (comment) GBLogDebug(@"Assigned comment '%@' to '%@'...", [comment.stringValue normalizedDescription], object);
 }
 

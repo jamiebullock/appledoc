@@ -18,6 +18,7 @@
 - (void)processCategories;
 - (void)processProtocols;
 - (void)processConstants;
+- (void)processBlocks;
 - (void)processDocuments;
 
 - (void)processMethodsFromProvider:(GBMethodsProvider *)provider;
@@ -37,10 +38,10 @@
 - (void)validateCommentsForObjectAndMembers:(GBModelBase *)object;
 - (BOOL)isCommentValid:(GBComment *)comment;
 
-@property (retain) GBCommentsProcessor *commentsProcessor;
-@property (retain) id currentContext;
-@property (retain) GBStore *store;
-@property (retain) GBApplicationSettingsProvider *settings;
+@property (strong) GBCommentsProcessor *commentsProcessor;
+@property (strong) id currentContext;
+@property (strong) GBStore *store;
+@property (strong) GBApplicationSettingsProvider *settings;
 
 @end
 
@@ -51,7 +52,7 @@
 #pragma mark Initialization & disposal
 
 + (id)processorWithSettingsProvider:(id)settingsProvider {
-	return [[[self alloc] initWithSettingsProvider:settingsProvider] autorelease];
+	return [[self alloc] initWithSettingsProvider:settingsProvider];
 }
 
 - (id)initWithSettingsProvider:(id)settingsProvider {
@@ -78,6 +79,7 @@
 	[self processCategories];
 	[self processProtocols];
     [self processConstants];
+    [self processBlocks];
 	[self processDocuments];
 }
 
@@ -142,6 +144,20 @@
 	}
 }
 
+- (void)processBlocks {
+    NSArray *blocks = [self.store.blocks allObjects];
+    for (GBTypedefBlockData *blockData in blocks) {
+        GBLogInfo(@"Processing blocks %@...", blockData);
+        self.currentContext = blockData;
+        if (![self removeUndocumentedObject:blockData]) {
+            [self processCommentForObject:blockData];
+            [self validateCommentsForObjectAndMembers:blockData];
+            [self processHtmlReferencesForObject:blockData];
+        }
+        GBLogDebug(@"Finished processing blocks %@.", blockData);
+    }
+}
+
 - (void)processDocuments {
 	for (GBDocumentData *document in self.store.documents) {
 		GBLogInfo(@"Processing static document %@...", document);
@@ -173,6 +189,15 @@
 	}
 }
 
+- (void)processBlocksForObject:(NSArray *)blocks {
+    for (GBTypedefBlockData *block in blocks) {
+        GBLogVerbose(@"Processing block %@...", block);
+        [self processCommentForObject:block];
+        GBLogDebug(@"Finished processing method %@.", block);
+    }
+}
+
+
 - (void)processConstantsFromProvider:(GBEnumConstantProvider *)provider {
 	NSArray *constants = [provider.constants copy];
 	for (GBEnumConstantData *constant in constants) {
@@ -200,7 +225,7 @@
 	}
 	
 	// Let comments processor parse comment string value into object representation.
-	self.commentsProcessor.alwaysRepeatFirstParagraph = object.isTopLevelObject || object.isStaticDocument;
+	self.commentsProcessor.alwaysRepeatFirstParagraph = (object.isTopLevelObject || object.isStaticDocument) && ![object isKindOfClass: [GBTypedefBlockData class]];
 	[self.commentsProcessor processCommentForObject:object withContext:self.currentContext store:self.store];
 }
 
@@ -218,15 +243,15 @@
 	}];
 	NSMutableDictionary *parameters = [NSMutableDictionary dictionaryWithCapacity:[comment.methodParameters count]];
 	[comment.methodParameters enumerateObjectsUsingBlock:^(GBCommentArgument *parameter, NSUInteger idx, BOOL *stop) {
-		[parameters setObject:parameter forKey:parameter.argumentName];
+		parameters[parameter.argumentName] = parameter;
 	}];
 	
 	// Sort the parameters in the same order as in the method. Warn if any parameter is not found. Also warn if there are more parameters in the comment than the method defines. Note that we still add these descriptions to the end of the sorted list!
 	NSMutableArray *sorted = [NSMutableArray arrayWithCapacity:[parameters count]];
 	[names enumerateObjectsUsingBlock:^(NSString *name, NSUInteger idx, BOOL *stop) {
-		GBCommentArgument *parameter = [parameters objectForKey:name];
+		GBCommentArgument *parameter = parameters[name];
 		if (!parameter) {
-            if (method.includeInOutput)
+            if (self.settings.warnOnMissingMethodArgument && method.includeInOutput)
                 GBLogXWarn(comment.sourceInfo, @"%@: Description for parameter '%@' missing for %@!", comment.sourceInfo, name, method);
 			return;
 		}
@@ -240,7 +265,7 @@
 			[description appendString:parameter.argumentName];
 			[sorted addObject:parameter];
 		}];
-		if (self.settings.warnOnMissingMethodArgument && method.includeInOutput) GBLogXWarn(comment.sourceInfo, @"%@: %ld unknown parameter descriptions (%@) found for %@", comment.sourceInfo, [parameters count], description, method);
+		if (method.includeInOutput) GBLogXWarn(comment.sourceInfo, @"%@: %ld unknown parameter descriptions (%@) found for %@", comment.sourceInfo, [parameters count], description, method);
 	}
 	
 	// Finaly re-register parameters to the comment if necessary (no need if there's only one parameter).
@@ -294,14 +319,16 @@
 	// Only remove if all methods are uncommented. Note that this also removes methods regardless of keepUndocumentedMembers setting, however if the object itself is commented, we'll keep methods.
 	if([object conformsToProtocol:@protocol(GBObjectDataProviding)])
     {
-        GBMethodsProvider *provider = [(id<GBObjectDataProviding>)object methods];
         BOOL hasCommentedMethods = NO;
+        
+        GBMethodsProvider *provider = [(id<GBObjectDataProviding>)object methods];
         for (GBMethodData *method in provider.methods) {
             if ([self isCommentValid:method.comment]) {
                 hasCommentedMethods = YES;
                 break;
             }
         }
+        
         // Remove the object if it only has uncommented methods.
         if (!hasCommentedMethods) {
             GBLogVerbose(@"Removing undocumented object %@...", object);
@@ -389,7 +416,7 @@
 			if (!self.settings.keepMergedCategoriesSections) {
 				GBLogDebug(@"Creating single section for methods merged from %@...", category);
 				NSString *key = category.isExtension ? @"mergedExtensionSectionTitle" :  @"mergedCategorySectionTitle";
-				NSString *template = [self.settings.stringTemplates.objectPage objectForKey:key];
+				NSString *template = self.settings.stringTemplates.objectPage[key];
 				NSString *name = category.isExtension ? template : [NSString stringWithFormat:template, category.nameOfCategory];
 				[classMethodProvider registerSectionWithName:name];
 			}
@@ -399,7 +426,7 @@
 				GBLogDebug(@"Merging section %@ from %@...", section, category);
 				if (self.settings.keepMergedCategoriesSections) {
 					if (self.settings.prefixMergedCategoriesSectionsWithCategoryName && !category.isExtension) {
-						NSString *template = [self.settings.stringTemplates.objectPage objectForKey:@"mergedPrefixedCategorySectionTitle"];
+						NSString *template = self.settings.stringTemplates.objectPage[@"mergedPrefixedCategorySectionTitle"];
 						NSString *name = [NSString stringWithFormat:template, category.nameOfCategory, section.sectionName];
 						[classMethodProvider registerSectionWithName:name];
 					} else {
@@ -436,7 +463,9 @@
     if (!object.includeInOutput) return;
     
 	// Checks if the object is commented and warns if not. This validates given object and all it's members comments! The reason for doing it together is due to the fact that we first process all members and then handle the object. At that point we can even remove the object if not documented. So we can't validate members before as we don't know whether they will be deleted together with their parent object too...
-	if (![self isCommentValid:object.comment] && self.settings.warnOnUndocumentedObject) GBLogXWarn(object.prefferedSourceInfo, @"%@ is not documented!", object);
+    if (![self isCommentValid:object.comment] && self.settings.warnOnUndocumentedObject) {
+        GBLogXWarn(object.prefferedSourceInfo, @"%@ is not documented!", object);
+    }
 	
 	// Handle methods.
     if([object conformsToProtocol:@protocol(GBObjectDataProviding)])
@@ -446,6 +475,7 @@
                 GBLogXWarn(method.prefferedSourceInfo, @"%@ is not documented!", method);
             }
         }
+        
     }
     
     if([object isKindOfClass:[GBTypedefEnumData class]])

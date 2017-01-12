@@ -13,7 +13,7 @@
 
 @interface GBOutputGenerator ()
 
-@property (readwrite, retain) GBStore *store;
+@property (readwrite, strong) GBStore *store;
 
 @end
 
@@ -24,7 +24,7 @@
 #pragma mark Initialization & disposal
 
 + (id)generatorWithSettingsProvider:(id)settingsProvider {
-	return [[[self alloc] initWithSettingsProvider:settingsProvider] autorelease];
+	return [[self alloc] initWithSettingsProvider:settingsProvider];
 }
 
 - (id)initWithSettingsProvider:(id)settingsProvider {
@@ -62,7 +62,7 @@
 		}
 	} else if (exists) {
 		GBLogDebug(@"Enumerating directory contents...");
-		NSArray *contents = [self.fileManager contentsOfDirectoryAtPath:path error:error];
+		NSArray *contents = [self.fileManager contentsOfDirectoryAtPath:standardized error:error];
 		if (!contents && error && *error) return NO;
 		for (NSString *subpath in contents) {
 			if (![preserve containsObject:subpath]) {
